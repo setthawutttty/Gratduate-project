@@ -1,0 +1,140 @@
+[###========> ขั้นตอนการฝากของ <========###]
+
+1. ดูทั้งหมด - หน้า Home [GET] => https://linebot.komkawila.com/api/device/group/group_id/{group_id} 
+2. ดูเฉพาะช่อง [GET] => https://linebot.komkawila.com/api/device/group/device_id/{device_id}
+    Response
+    {
+        "device_id": 3,
+        "device_name": "lock 1", // ชื่อช่องใส่ของ
+        "device_status": 0, // {0=unlock[ไม่ได้ฝากของ] 1=lock[ล็อคไม่ได้ฝากของ]} ฝากของ{2=lock[ล็อคฝากของ]}
+        "device_createtime": "2022-02-20T12:23:36.000Z", // เวลาที่เพิ่ม
+        "device_updatetime": "2022-02-20T15:19:07.000Z", // เวลาที่อัพเดท
+        "group_id": 2,
+        "log_id": 19,
+        "device_success": 0, // 0 คือ ว่าง | 1 คือ มีของฝากอยู่
+        "user_id": 0
+    }
+
+3. เช็คว่าสถานะว่างไหม เช็คจาก device_success ข้อ 2
+4. เลือกผู้รับของ [STEP 1]
+    --------[GET] https://linebot.komkawila.com/api/user/user/all
+    --------[GET] https://linebot.komkawila.com/api/user/user/search/{ข้อความ ชื่อ เบอร์โทร อีเมล}
+
+4. ข้อมูลผู้รับประจำช่อง [POST] https://linebot.komkawila.com/api/device/log/add
+    Body {
+        "group_id" :"2",
+        "device_id" :"4",
+        "user_id" :"23",
+        "device_password" :"052145" // สุ่มมา 6 หลัก
+    }
+    Response
+    {
+        "data": {
+        "err": false,
+        "status": true,
+        "message": {
+            "fieldCount": 0,
+            "affectedRows": 1,
+            "insertId": 22,
+            "serverStatus": 2,
+            "warningCount": 0,
+            "message": "",
+            "protocol41": true,
+            "changedRows": 0
+        },
+        "img": "23_imgsendpeople.png" // ชื่อไฟล์สำหรับอัพขึ้น server {ชื่อไฟล์ ไม่ต้องใส่นามสกุลไฟล์}
+    }
+
+[STEP 2]
+5.ถ่ายรูปเข้า Server [POST] https://linebot.komkawila.com/upload-images/upload-image/{ชื่อไฟล์ ไม่ต้องใส่นามสกุลไฟล์}
+    Ex.
+     1.การเรียกใช้รูปภาพ https://linebot.komkawila.com/upload-images/upload-image/23_imgsendpeople
+        Body Form Data{
+            file : xx File
+        }
+
+https://api.phanuwat.info/api/device/device/managerdevice/device_id
+BODY {
+    "device_success":"0",
+    "device_status":"0",
+    "device_check":"0" // [1].เปิดประตูฝากของ 2.ปิดประตูฝากของสำเร็จ [3].สั่งเปิดประตูรับของ  -> 0
+}
+
+///////// api สั่งเปิดประตู
+
+6.เช็คสถานะว่าประตูปิดหรือยัง [GET] https://linebot.komkawila.com/api/device/group/device_id/{device_id}
+ทดสอบโดย [PUT] https://linebot.komkawila.com/api/device/device/device_status/{device_id}
+	BODY {"value":"2"}
+    ถ้า device_status = 2 แสดงว่าล็อคประตูแล้ว ให้ปิด ขึ้นว่าฝากของสำเร็จ
+7. ถ้าปิดตู้แล้วให้ส่งรูปภาพเข้าไลน์
+[GET] https://linebot.komkawila.com/api/linebot/send/step/1/{device_id}
+
+[-
+-
+--
+_____
+-
+-
+--
+--
+--
+
+-
+--
+
+-
+-]
+[###========> ขั้นตอนการรับของ <========###]
+1. ดูข้อมูลเฉพาะช่อง [GET] => https://linebot.komkawila.com/api/device/group/device_id/{device_id}
+    Response
+    {
+        "device_id": 3,
+        "device_name": "lock 1", // ชื่อช่องใส่ของ
+        "device_status": 0, // {0=unlock[ไม่ได้ฝากของ] 1=lock[ล็อคไม่ได้ฝากของ]} ฝากของ{2=lock[ล็อคฝากของ]}
+        "device_createtime": "2022-02-20T12:23:36.000Z", // เวลาที่เพิ่ม
+        "device_updatetime": "2022-02-20T15:19:07.000Z", // เวลาที่อัพเดท
+        "group_id": 2,
+        "log_id": 19,
+        "device_success": 1, // 0 คือ ว่าง | 1 คือ มีของฝากอยู่
+        "user_id": 0
+    }
+
+2. หลังจากเลือกช่อง ให้ใส่รหัสผ่าน ถ้ารหัสตรงให้ไปข้อ 3
+3.ใช้ log_id จากข้อ 1 มา [PUT] https://linebot.komkawila.com/api/device/log/log_imgreceive/{log_id}
+    Response
+        "message": {
+            "fieldCount": 0,
+            "affectedRows": 1,
+            "insertId": 0,
+            "serverStatus": 2,
+            "warningCount": 0,
+            "message": "(Rows matched: 1  Changed: 1  Warnings: 0",
+            "protocol41": true,
+            "changedRows": 1,
+            "file": "27_imgreceive.png" ชื่อไฟล์เพื่อเอาไปใช้ในการอัพโหลดรูปภาพ
+        }
+
+4.ถ่ายรูปผู้รับเข้า Server [POST] https://linebot.komkawila.com/upload-images/upload-image/{ชื่อไฟล์ ไม่ต้องใส่นามสกุลไฟล์}. Text.substring(text.indexof('.png'),text.length())
+    Ex.
+     1.การเรียกใช้รูปภาพ https://linebot.komkawila.com/upload-images/upload-image/27_imgreceive
+        Body Form Data{
+            file : xx File
+        }
+
+https://linebot.komkawila.com/api/device/device/device_status/{device_id}
+BODY  {"value":"0"}
+///////// api สั่งเปิดประตู
+
+while(device_status != 0) every 1 sec
+https://linebot.komkawila.com/api/device/group/device_id/{device_id}
+
+5. ถ้าปิดตู้แล้วให้ส่งรูปภาพเข้าไลน์
+[GET] https://linebot.komkawila.com/api/linebot/send/step/2/{device_id}
+
+6. เมื่อส่งไลน์สำเร็จ เคลียข้อมูล Device [POST] => https://linebot.komkawila.com/api/device/device/cleardevice/{device_id}
+
+
+Ex.
+    1.การเรียกใช้รูปภาพ https://linebot.komkawila.com/images/28_imgreceive.png
+
+เคลียข้อมูล Device [POST] => https://linebot.komkawila.com/api/device/device/cleardevice/{device_id}
